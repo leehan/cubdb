@@ -52,7 +52,7 @@ defmodule CubDB.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:quixir, "~> 0.9", only: :test},
+      {:stream_data, "~> 1.4", only: :test},
       {:dialyxir, "~> 1.1", only: [:dev], runtime: false},
       {:ex_doc, "~> 0.28", only: :dev, runtime: false},
       {:benchee, "~> 1.1", only: :dev},

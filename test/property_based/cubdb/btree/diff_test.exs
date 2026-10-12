@@ -1,6 +1,6 @@
 defmodule PropertyBased.Btree.DiffTest do
   use ExUnit.Case
-  use Quixir
+  use ExUnitProperties
 
   alias CubDB.Btree
   alias CubDB.Btree.Diff
@@ -11,33 +11,19 @@ defmodule PropertyBased.Btree.DiffTest do
   import TestHelper
 
   @tag property_based: true
-  test "Diff enumerates through updates from a btree to a more updated one" do
-    ptest [
-            cap: int(min: 2, max: 32),
-            entries:
-              list(
-                max: 30,
-                of:
-                  tuple(
-                    like: {
-                      string(max: 4, chars: :printable),
-                      string(max: 5, chars: :printable)
-                    }
-                  )
-              ),
-            updates:
-              list(
-                max: 10,
-                of:
-                  tuple(
-                    like: {
-                      string(max: 4, chars: :printable),
-                      string(max: 5, chars: :printable)
-                    }
-                  )
-              )
-          ],
-          repeat_for: 50 do
+  property "Diff enumerates through updates from a btree to a more updated one" do
+    entry =
+      tuple({
+        string(:utf8, max_length: 4),
+        string(:utf8, max_length: 5)
+      })
+
+    check all(
+            cap <- integer(2..32),
+            entries <- list_of(entry, max_length: 30),
+            updates <- list_of(entry, max_length: 10),
+            max_runs: 50
+          ) do
       {:ok, store} = Store.TestStore.create()
       from_btree = make_btree(store, entries, cap)
 

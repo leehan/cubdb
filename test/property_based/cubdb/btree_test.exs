@@ -1,28 +1,25 @@
 defmodule PropertyBased.BtreeTest do
   use ExUnit.Case
-  use Quixir
+  use ExUnitProperties
 
   alias CubDB.Btree
   alias CubDB.Store
 
   @tag property_based: true
-  test "a Btree gets updated as expected" do
-    ptest [
-            cap: int(min: 2, max: 32),
-            tuples:
-              list(
-                min: 1,
-                max: 200,
-                of:
-                  tuple(
-                    like: {
-                      string(max: 8, chars: :ascii),
-                      string(max: 1000)
-                    }
-                  )
-              )
-          ],
-          repeat_for: 200 do
+  property "a Btree gets updated as expected" do
+    check all(
+            cap <- integer(2..32),
+            tuples <-
+              list_of(
+                tuple({
+                  string(:ascii, max_length: 8),
+                  string(:utf8, max_length: 1000)
+                }),
+                min_length: 1,
+                max_length: 200
+              ),
+            max_runs: 200
+          ) do
       {:ok, store} = Store.TestStore.create()
       tree = Btree.new(store, cap)
       inserts = tuples |> Enum.map(fn tuple -> {:insert, tuple} end)

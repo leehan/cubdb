@@ -1,17 +1,17 @@
 defmodule PropertyBased.CubDb.Store.File.BlocksTest do
   use ExUnit.Case
-  use Quixir
+  use ExUnitProperties
 
   alias CubDB.Store.File.Blocks
 
   @tag property_based: true
-  test "adding and removing block headers" do
-    ptest [
-            block_size: int(min: 4, max: 32),
-            bin: string(min: 1, max: 64, chars: :ascii),
-            loc: int(min: 0, max: 256)
-          ],
-          repeat_for: 100 do
+  property "adding and removing block headers" do
+    check all(
+            block_size <- integer(4..32),
+            bin <- string(:ascii, min_length: 1, max_length: 64),
+            loc <- integer(0..256),
+            max_runs: 100
+          ) do
       bin_with_headers = Blocks.add_markers(bin, loc, block_size) |> Enum.join()
 
       assert Blocks.length_with_markers(loc, byte_size(bin), block_size) ==
