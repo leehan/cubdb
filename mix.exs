@@ -17,14 +17,7 @@ defmodule CubDB.Mixfile do
       source_url: @source_url,
       docs: docs(),
       dialyzer: dialyzer(),
-      test_coverage: [tool: ExCoveralls],
-      preferred_cli_env: [
-        coveralls: :test,
-        "coveralls.detail": :test,
-        "coveralls.post": :test,
-        "coveralls.html": :test,
-        "coveralls.travis": :test
-      ]
+      test_coverage: [tool: ExCoveralls]
     ]
   end
 
@@ -34,6 +27,18 @@ defmodule CubDB.Mixfile do
   def application do
     # Specify extra applications you'll use from Erlang/Elixir
     [extra_applications: [:logger]]
+  end
+
+  def cli do
+    [
+      preferred_envs: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.post": :test,
+        "coveralls.html": :test,
+        "coveralls.travis": :test
+      ]
+    ]
   end
 
   # Dependencies can be Hex packages:

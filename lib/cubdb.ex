@@ -1323,9 +1323,8 @@ defmodule CubDB do
     {:reply, {:error, :already_in_transaction}, state}
   end
 
-  def handle_call(:start_transaction, from, state) do
-    %State{write_queue: queue} = state
-    {:noreply, %State{state | write_queue: :queue.in(from, queue)}}
+  def handle_call(:start_transaction, from, %State{} = state) do
+    {:noreply, %{state | write_queue: :queue.in(from, state.write_queue)}}
   end
 
   def handle_call(:cancel_transaction, {pid, _}, state = %State{writer: {pid, _}}) do
@@ -1389,15 +1388,15 @@ defmodule CubDB do
     end
   end
 
-  def handle_call({:set_auto_compact, setting}, _, state) do
+  def handle_call({:set_auto_compact, setting}, _, %State{} = state) do
     case parse_auto_compact(setting) do
-      {:ok, setting} -> {:reply, :ok, %State{state | auto_compact: setting}}
+      {:ok, setting} -> {:reply, :ok, %{state | auto_compact: setting}}
       {:error, reason} -> {:reply, {:error, reason}, state}
     end
   end
 
-  def handle_call({:set_auto_file_sync, bool}, _, state) do
-    {:reply, :ok, %State{state | auto_file_sync: bool}}
+  def handle_call({:set_auto_file_sync, bool}, _, %State{} = state) do
+    {:reply, :ok, %{state | auto_file_sync: bool}}
   end
 
   def handle_call({:subscribe, pid}, _, state = %State{subs: subs}) do
@@ -1462,16 +1461,16 @@ defmodule CubDB do
 
   @spec checkin_reader(reference, Btree.t(), State.t()) :: State.t()
 
-  defp checkin_reader(ref, btree, state) do
+  defp checkin_reader(ref, btree, %State{} = state) do
     %State{readers: readers} = state
     %Btree{store: %Store.File{file_path: file_path}} = btree
 
-    %State{state | readers: Map.put(readers, ref, file_path)}
+    %{state | readers: Map.put(readers, ref, file_path)}
   end
 
   @spec checkout_reader(reference, State.t()) :: State.t()
 
-  defp checkout_reader(ref, state) do
+  defp checkout_reader(ref, %State{} = state) do
     %State{readers: readers} = state
 
     case Map.pop(readers, ref) do
@@ -1480,9 +1479,9 @@ defmodule CubDB do
 
       {_, readers} ->
         if state.clean_up_pending == true do
-          trigger_clean_up(%State{state | readers: readers})
+          trigger_clean_up(%{state | readers: readers})
         else
-          %State{state | readers: readers}
+          %{state | readers: readers}
         end
     end
   end
@@ -1589,10 +1588,8 @@ defmodule CubDB do
   defp do_halt_compaction(state = %State{compactor: nil}), do: state
 
   defp do_halt_compaction(state = %State{compactor: pid}) do
-    if pid != nil do
-      Process.exit(pid, :halt)
-      Store.close(state.compacting_store)
-    end
+    Process.exit(pid, :halt)
+    Store.close(state.compacting_store)
 
     %State{state | compactor: nil, compacting_store: nil}
   end
@@ -1629,8 +1626,8 @@ defmodule CubDB do
 
   @spec clean_up_when_possible(State.t()) :: State.t()
 
-  defp clean_up_when_possible(state) do
-    %State{state | clean_up_pending: true}
+  defp clean_up_when_possible(%State{} = state) do
+    %{state | clean_up_pending: true}
   end
 
   @spec maybe_auto_compact(State.t()) :: State.t()
@@ -1656,7 +1653,7 @@ defmodule CubDB do
 
   @spec advance_write_queue(State.t()) :: State.t()
 
-  defp advance_write_queue(state) do
+  defp advance_write_queue(%State{} = state) do
     %State{write_queue: queue, btree: btree} = state
 
     {writer, queue} =
@@ -1675,7 +1672,7 @@ defmodule CubDB do
           {nil, queue}
       end
 
-    %State{state | writer: writer, write_queue: queue}
+    %{state | writer: writer, write_queue: queue}
   end
 
   @spec parse_auto_compact(any) :: {:ok, auto_compact} | {:error, any}
